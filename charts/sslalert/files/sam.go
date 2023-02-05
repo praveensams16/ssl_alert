@@ -92,7 +92,7 @@ func results(w http.ResponseWriter, req *http.Request) {
 			go s.getdate(i)
 
 		} else {
-			prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%s,reachability=%s,reason=%s} = 0\n", i, 0, "false", "false", "Unable to reach the url")
+			prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%s,reachability=%s,reason=%s} = 0\n", i, 0, "false", "false", "Unable to reach the url")
 			fmt.Fprintf(w, prt)
 			println("run", i)
 		}
@@ -103,11 +103,11 @@ func results(w http.ResponseWriter, req *http.Request) {
 		select {
 		case d := <-s.c:
 			if d.valid && d.reachability {
-				prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"\"} = 1\n", d.url, d.days, d.valid, d.reachability)
+				prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"\"} = 1\n", d.url, d.days, d.valid, d.reachability)
 				fmt.Fprintf(w, prt)
 			} else {
 
-				prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"About to expire\"} = 0\n", d.url, d.days, d.valid, d.reachability)
+				prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"About to expire\"} = 0\n", d.url, d.days, d.valid, d.reachability)
 				fmt.Fprintf(w, prt)
 			}
 		}
