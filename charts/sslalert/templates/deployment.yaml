@@ -28,19 +28,28 @@ spec:
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       volumes:
+        - name: url
+          configMap:
+            name: url
         - name: code
           configMap:
             name: code
       containers:
         - name: {{ .Chart.Name }}
           volumeMounts:
+          - name: url
+            mountPath: /mnt/url.txt
+            subPath: "url.txt"
           - name: code
             mountPath: /mnt/sam.go
             subPath: "sam.go"
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: days
+              value: {{ .Values.days | quote }}
           command: ["go"]
           args: ["run","/mnt/sam.go"]
           ports:

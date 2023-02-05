@@ -3,9 +3,13 @@ package main
 import (
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
+    "os"
+    "strconv"
 )
 
 type (
@@ -64,8 +68,8 @@ func (s *stats) getdate(url string) {
 
 	d1, _ := time.Parse("2006-01-02 ", cert.NotAfter.Format("2006-01-02"))
 	d2, _ := time.Parse("2006-01-02 ", currentTime.Format("2006-01-02"))
-
-	if int(d1.Sub(d2).Hours()/24) > 50 {
+    val,_ := strconv.Atoi(os.Getenv("days"))
+	if int(d1.Sub(d2).Hours()/24) > val {
 		s.c <- result{url: url, url_s: "Enough days", days: int(d1.Sub(d2).Hours() / 24), valid: true, reachability: true}
 		s.count = s.count + 1
 	} else {
@@ -79,36 +83,31 @@ func (s *stats) getdate(url string) {
 func results(w http.ResponseWriter, req *http.Request) {
 
 	s := &stats{c: make(chan result, 1000)}
-	lists := []string{
-		"prometheus.observe.internal.unifonic.com",
-		"www.google.com",
-		"www.yahoo.com",
-		"www.unifonic.com",
-		"wwww.ddssss.com",
-		"www.sneouhfbakjd.com",
-	}
+	files, _ := ioutil.ReadFile("/mnt/url.txt")
+	lists := strings.Split(string(files), "\n")
 	for _, i := range lists {
-
+        if len(i) > 0 {
 		if url_validator(i) {
 			wg.Add(1)
 			go s.getdate(i)
 
 		} else {
-			prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%s,reachability=%s,reason=%s} = 0\n", i, 0, "false", "false", "Unable to reach the url")
+			prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%s,reachability=%s,reason=%s} = 0\n", i, 0, "false", "false", "Unable to reach the url")
 			fmt.Fprintf(w, prt)
 			println("run", i)
 		}
+      }
 	}
 	wg.Wait()
 	for i := 0; i < s.count; i++ {
 		select {
 		case d := <-s.c:
 			if d.valid && d.reachability {
-				prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"\"} = 1\n", d.url, d.days, d.valid, d.reachability)
+				prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"\"} = 1\n", d.url, d.days, d.valid, d.reachability)
 				fmt.Fprintf(w, prt)
 			} else {
 
-				prt := fmt.Sprintf("web_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"About to expire\"} = 0\n", d.url, d.days, d.valid, d.reachability)
+				prt := fmt.Sprintf("unifonic_ssl{url=%s,days=%d,valid=%t,reachability=%t,reason=\"About to expire\"} = 0\n", d.url, d.days, d.valid, d.reachability)
 				fmt.Fprintf(w, prt)
 			}
 		}

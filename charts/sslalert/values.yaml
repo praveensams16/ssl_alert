@@ -3,6 +3,11 @@
 # Declare variables to be passed into your templates.
 
 replicaCount: 1
+days: 45
+url:
+  - "www.google.com"
+  - "www.yahoo.com"
+  - "www.testing.com"
 
 image:
   repository: golang 
